@@ -1,0 +1,21 @@
+{
+  "name": "zen-tetris",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {
+    "matter-js": "^0.11.1"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.18.0",
+    "babel-core": "^6.21.0",
+    "babel-loader": "^6.2.10",
+    "babel-preset-es2015": "^6.18.0",
+    "webpack": "^1.14.0"
+  },
+  "scripts": {
+    "build": "webpack"
+  },
+  "author": "",
+  "license": "ISC"
+}
