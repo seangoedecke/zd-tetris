@@ -16,8 +16,11 @@ const Composite = Matter.Composite
 const Runner = Matter.Runner
 const Body = Matter.Body
 
-let tick = 0
-let activeBlock = Bodies.rectangle(0, 0, 0, 0)
+let tick  // game tick counter
+let activeBlock  // block that the player controls
+let runner // game runner
+
+let isRunning
 
 const resultMessage = document.getElementById('message')
 const results = document.getElementById('results')
@@ -116,6 +119,12 @@ document.onkeydown = (key) => {
   if ((key.code === 'KeyA') || (key.code === 'KeyB')) {
     Body.setAngularVelocity(activeBlock, 0)  // make deceleration instant
   }
+  if (!isRunning) {
+    if (key.code === 'Space') {
+      hideEndGameScreen()
+      initGame()
+    }
+  }
 }
 
 // game loop
@@ -144,6 +153,7 @@ Events.on(engine, 'beforeTick', () => {
       body !== rightWall) {
       renderEndGameScreen(Composite.allBodies(engine.world).length - 3)
       Runner.stop(runner)
+      isRunning = false
     }
   })
 
@@ -162,15 +172,29 @@ Events.on(engine, 'beforeTick', () => {
 })
 
 const renderEndGameScreen = (score) => {
-  resultMessage.innerHTML = `You stacked ${Composite.allBodies(engine.world).length - 3} bodies before losing.`
+  resultMessage.innerHTML = `You stacked ${Composite.allBodies(engine.world).length - 3} shapes before losing.`
   results.className = 'results'
 }
 
-// add all of the bodies to the world
-World.add(engine.world, [leftWall, rightWall, ground])
+const hideEndGameScreen = () => {
+  results.className = 'hidden'
+}
 
-// run the engine
-const runner = Engine.run(engine)
+const initGame = () => {
+  tick = 0
+  activeBlock = Bodies.rectangle(0, 0, 0, 0)
 
-// run the renderer
-Render.run(render)
+  World.clear(engine.world) // clear world (if the game is restarting)
+
+  // add all of the bodies to the world
+  World.add(engine.world, [leftWall, rightWall, ground])
+
+  // run the engine
+  runner = Engine.run(engine)
+
+  isRunning = true
+  // run the renderer
+  Render.run(render)
+}
+
+initGame()

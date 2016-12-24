@@ -50,39 +50,39 @@
 
 	var _matterJs2 = _interopRequireDefault(_matterJs);
 
-	var _bodiesSemicircle = __webpack_require__(2);
+	var _zdColours = __webpack_require__(2);
 
-	var _bodiesSemicircle2 = _interopRequireDefault(_bodiesSemicircle);
-
-	var _zdColours = __webpack_require__(3);
+	var _relationshapes = __webpack_require__(3);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	// module aliases
-	var Engine = _matterJs2.default.Engine,
-	    Render = _matterJs2.default.Render,
-	    World = _matterJs2.default.World,
-	    Events = _matterJs2.default.Events,
-	    Common = _matterJs2.default.Common,
-	    Bodies = _matterJs2.default.Bodies,
-	    Bounds = _matterJs2.default.Bounds,
-	    Vertices = _matterJs2.default.Vertices,
-	    Composite = _matterJs2.default.Composite,
-	    Runner = _matterJs2.default.Runner,
-	    Body = _matterJs2.default.Body;
+	var Engine = _matterJs2.default.Engine;
+	var Render = _matterJs2.default.Render;
+	var World = _matterJs2.default.World;
+	var Events = _matterJs2.default.Events;
+	var Bodies = _matterJs2.default.Bodies;
+	var Bounds = _matterJs2.default.Bounds;
+	var Composite = _matterJs2.default.Composite;
+	var Runner = _matterJs2.default.Runner;
+	var Body = _matterJs2.default.Body;
 
-	var tick = 0;
-	var activeBlock = Bodies.rectangle(0, 0, 0, 0);
+	var tick = void 0; // game tick counter
+	var activeBlock = void 0; // block that the player controls
+	var runner = void 0; // game runner
+
+	var isRunning = void 0;
 
 	var resultMessage = document.getElementById('message');
 	var results = document.getElementById('results');
+	var tetris = document.getElementById('tetris');
 
 	// create an engine
 	var engine = Engine.create();
 
 	// create a renderer
 	var render = Render.create({
-	  element: document.getElementById('tetris'),
+	  element: tetris,
 	  engine: engine,
 	  options: {
 	    width: 400,
@@ -125,51 +125,13 @@
 	  }
 	});
 
-	var getRandomColor = function getRandomColor() {
-	  return Common.choose([_zdColours.ZD_APPLE_GREEN, _zdColours.ZD_PELOROUS, _zdColours.ZD_YELLOW, _zdColours.ZD_ORANGE, _zdColours.ZD_MANDY, _zdColours.ZD_FLAMINGO, _zdColours.ZD_TEAL]);
-	};
-
-	var getRandomShape = function getRandomShape(x, color) {
-	  return Common.choose([Bodies.rectangle(x, 5, 80, 80, { // square
-	    render: {
-	      fillStyle: color,
-	      strokeStyle: 'transparent'
-	    },
-	    friction: 1
-	  }), Bodies.rectangle(x, 5, 80, 160, { // rect
-	    render: {
-	      fillStyle: color,
-	      strokeStyle: 'transparent'
-	    },
-	    friction: 1
-	  }), Bodies.circle(x, 5, 40, { // circle
-	    render: {
-	      fillStyle: color,
-	      strokeStyle: 'transparent'
-	    },
-	    friction: 1
-	  }), Bodies.polygon(x, 5, 3, 40, { // triangle
-	    render: {
-	      fillStyle: color,
-	      strokeStyle: 'transparent'
-	    },
-	    friction: 1
-	  }), (0, _bodiesSemicircle2.default)(x, 5, 40, { // semicircle
-	    render: {
-	      fillStyle: color,
-	      strokeStyle: 'transparent'
-	    },
-	    friction: 1
-	  })]);
-	};
-
 	var generateBlock = function generateBlock() {
 	  var x = 0;
 	  while (x < 30 || x > render.options.width - 30) {
 	    x = render.options.width * Math.random();
 	  }
-	  var color = getRandomColor();
-	  return getRandomShape(x, color);
+	  var color = (0, _relationshapes.getRandomColor)();
+	  return (0, _relationshapes.getRandomShape)(x, color);
 	};
 
 	// listen for keys
@@ -188,7 +150,13 @@
 
 	document.onkeydown = function (key) {
 	  if (key.code === 'KeyA' || key.code === 'KeyB') {
-	    Body.setAngularVelocity(activeBlock, 0);
+	    Body.setAngularVelocity(activeBlock, 0); // make deceleration instant
+	  }
+	  if (!isRunning) {
+	    if (key.code === 'Space') {
+	      hideEndGameScreen();
+	      initGame();
+	    }
 	  }
 	};
 
@@ -196,7 +164,7 @@
 	Events.on(engine, 'beforeTick', function () {
 	  tick = tick + 1;
 
-	  // enforce hard limit on active block
+	  // enforce hard limit on active block velocity
 	  if (activeBlock.angularVelocity < -0.05) {
 	    Body.setAngularVelocity(activeBlock, -0.05);
 	  }
@@ -212,10 +180,10 @@
 
 	  // check for loss condition
 	  Composite.allBodies(engine.world).forEach(function (body) {
-	    if (Bounds.overlaps(ceiling.bounds, body.bounds) && body != activeBlock && body != leftWall && body != rightWall) {
-
+	    if (Bounds.overlaps(ceiling.bounds, body.bounds) && body !== activeBlock && body !== leftWall && body !== rightWall) {
 	      renderEndGameScreen(Composite.allBodies(engine.world).length - 3);
 	      Runner.stop(runner);
+	      isRunning = false;
 	    }
 	  });
 
@@ -236,18 +204,32 @@
 	});
 
 	var renderEndGameScreen = function renderEndGameScreen(score) {
-	  resultMessage.innerHTML = 'You stacked ' + (Composite.allBodies(engine.world).length - 3) + ' bodies before losing.';
+	  resultMessage.innerHTML = 'You stacked ' + (Composite.allBodies(engine.world).length - 3) + ' shapes before losing.';
 	  results.className = 'results';
 	};
 
-	// add all of the bodies to the world
-	World.add(engine.world, [leftWall, rightWall, ground]);
+	var hideEndGameScreen = function hideEndGameScreen() {
+	  results.className = 'hidden';
+	};
 
-	// run the engine
-	var runner = Engine.run(engine);
+	var initGame = function initGame() {
+	  tick = 0;
+	  activeBlock = Bodies.rectangle(0, 0, 0, 0);
 
-	// run the renderer
-	Render.run(render);
+	  World.clear(engine.world); // clear world (if the game is restarting)
+
+	  // add all of the bodies to the world
+	  World.add(engine.world, [leftWall, rightWall, ground]);
+
+	  // run the engine
+	  runner = Engine.run(engine);
+
+	  isRunning = true;
+	  // run the renderer
+	  Render.run(render);
+	};
+
+	initGame();
 
 /***/ },
 /* 1 */
@@ -10229,12 +10211,95 @@
 
 /***/ },
 /* 2 */
+/***/ function(module, exports) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	var ZD_COLOUR_DARK = exports.ZD_COLOUR_DARK = '#03363D';
+	var ZD_COLOUR_LIGHT = exports.ZD_COLOUR_LIGHT = '#F3F0EE';
+	var ZD_APPLE_GREEN = exports.ZD_APPLE_GREEN = '#78A300';
+	var ZD_PELOROUS = exports.ZD_PELOROUS = '#30AABC';
+	var ZD_TEAL = exports.ZD_TEAL = '#37b8af';
+	var ZD_YELLOW = exports.ZD_YELLOW = '#EFC93D';
+	var ZD_ORANGE = exports.ZD_ORANGE = '#f79a3e';
+	var ZD_MANDY = exports.ZD_MANDY = '#eb4962';
+	var ZD_FLAMINGO = exports.ZD_FLAMINGO = '#eb6651';
+
+/***/ },
+/* 3 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	Object.defineProperty(exports, "__esModule", {
-	    value: true
+	  value: true
+	});
+	exports.getRandomShape = exports.getRandomColor = undefined;
+
+	var _matterJs = __webpack_require__(1);
+
+	var _matterJs2 = _interopRequireDefault(_matterJs);
+
+	var _bodiesSemicircle = __webpack_require__(4);
+
+	var _bodiesSemicircle2 = _interopRequireDefault(_bodiesSemicircle);
+
+	var _zdColours = __webpack_require__(2);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	var Common = _matterJs2.default.Common;
+	var Bodies = _matterJs2.default.Bodies;
+
+	var getRandomColor = exports.getRandomColor = function getRandomColor() {
+	  return Common.choose([_zdColours.ZD_APPLE_GREEN, _zdColours.ZD_PELOROUS, _zdColours.ZD_YELLOW, _zdColours.ZD_ORANGE, _zdColours.ZD_MANDY, _zdColours.ZD_FLAMINGO, _zdColours.ZD_TEAL]);
+	};
+
+	var getRandomShape = exports.getRandomShape = function getRandomShape(x, color) {
+	  return Common.choose([Bodies.rectangle(x, 5, 80, 80, { // square
+	    render: {
+	      fillStyle: color,
+	      strokeStyle: 'transparent'
+	    },
+	    friction: 1
+	  }), Bodies.rectangle(x, 5, 80, 160, { // rect
+	    render: {
+	      fillStyle: color,
+	      strokeStyle: 'transparent'
+	    },
+	    friction: 1
+	  }), Bodies.circle(x, 5, 40, { // circle
+	    render: {
+	      fillStyle: color,
+	      strokeStyle: 'transparent'
+	    },
+	    friction: 1
+	  }), Bodies.polygon(x, 5, 3, 40, { // triangle
+	    render: {
+	      fillStyle: color,
+	      strokeStyle: 'transparent'
+	    },
+	    friction: 1
+	  }), (0, _bodiesSemicircle2.default)(x, 5, 40, { // semicircle
+	    render: {
+	      fillStyle: color,
+	      strokeStyle: 'transparent'
+	    },
+	    friction: 1
+	  })]);
+	};
+
+/***/ },
+/* 4 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
 	});
 
 	var _matterJs = __webpack_require__(1);
@@ -10244,66 +10309,48 @@
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	// module aliases
-	var Common = _matterJs2.default.Common,
-	    Bodies = _matterJs2.default.Bodies,
-	    Vertices = _matterJs2.default.Vertices,
-	    Body = _matterJs2.default.Body;
+	var Common = _matterJs2.default.Common;
+	var Vertices = _matterJs2.default.Vertices;
+	var Body = _matterJs2.default.Body;
 
 	var _semiCircle = function _semiCircle(x, y, sides, radius, options) {
-	    options = options || {};
+	  options = options || {};
 
-	    var theta = 2 * Math.PI / sides,
-	        path = '',
-	        offset = theta * 0.5;
+	  var theta = 2 * Math.PI / sides;
+	  var path = '';
+	  var offset = theta * 0.5;
 
-	    for (var i = 0; i < sides; i += 1) {
-	        var angle = offset + i * theta,
-	            xx = Math.cos(angle) * radius,
-	            yy = Math.sin(angle) * radius;
+	  for (var i = 0; i < sides; i += 1) {
+	    var angle = offset + i * theta;
+	    var xx = Math.cos(angle) * radius;
+	    var yy = Math.sin(angle) * radius;
 
-	        path += 'L ' + xx.toFixed(3) + ' ' + yy.toFixed(3) + ' ';
-	    }
-	    var vertices = Vertices.fromPath(path);
-	    vertices = vertices.slice(vertices.length / 2); // Slice vertices of circle in half, forming a semi-circle
-	    var polygon = {
-	        label: 'Polygon Body',
-	        position: { x: x, y: y },
-	        vertices: vertices
-	    };
-	    return Body.create(Common.extend({}, polygon, options));
+	    path += 'L ' + xx.toFixed(3) + ' ' + yy.toFixed(3) + ' ';
+	  }
+	  var vertices = Vertices.fromPath(path);
+	  vertices = vertices.slice(vertices.length / 2); // Slice vertices of circle in half, forming a semi-circle
+	  var polygon = {
+	    label: 'Polygon Body',
+	    position: { x: x, y: y },
+	    vertices: vertices
+	  };
+	  return Body.create(Common.extend({}, polygon, options));
 	};
 
 	// returns semiCircle
 
 	exports.default = function (x, y, radius, options) {
-	    // approximate circles with polygons until true circles implemented in SAT
-	    var maxSides = 25;
-	    var sides = Math.ceil(Math.max(10, Math.min(maxSides, radius)));
+	  // approximate circles with polygons until true circles implemented in SAT
+	  var maxSides = 25;
+	  var sides = Math.ceil(Math.max(10, Math.min(maxSides, radius)));
 
-	    // optimisation: always use even number of sides (half the number of unique axes)
-	    if (sides % 2 === 1) sides += 1;
+	  // optimisation: always use even number of sides (half the number of unique axes)
+	  if (sides % 2 === 1) {
+	    sides += 1;
+	  }
 
-	    return _semiCircle(x, y, sides, radius, options);
+	  return _semiCircle(x, y, sides, radius, options);
 	};
-
-/***/ },
-/* 3 */
-/***/ function(module, exports) {
-
-	"use strict";
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	var ZD_COLOUR_DARK = exports.ZD_COLOUR_DARK = "#03363D";
-	var ZD_COLOUR_LIGHT = exports.ZD_COLOUR_LIGHT = "#F3F0EE";
-	var ZD_APPLE_GREEN = exports.ZD_APPLE_GREEN = "#78A300";
-	var ZD_PELOROUS = exports.ZD_PELOROUS = "#30AABC";
-	var ZD_TEAL = exports.ZD_TEAL = "#37b8af";
-	var ZD_YELLOW = exports.ZD_YELLOW = "#EFC93D";
-	var ZD_ORANGE = exports.ZD_ORANGE = '#f79a3e';
-	var ZD_MANDY = exports.ZD_MANDY = '#eb4962';
-	var ZD_FLAMINGO = exports.ZD_FLAMINGO = '#eb6651';
 
 /***/ }
 /******/ ]);

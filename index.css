@@ -16,8 +16,9 @@ div {
   flex-direction: column;
 }
 
-.results-footer{
+.results-middle{
   padding-top: 10px;
+  padding-bottom: 10px;
 }
 
 .hidden {
