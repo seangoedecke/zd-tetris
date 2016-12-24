@@ -50,7 +50,11 @@
 
 	var _matterJs2 = _interopRequireDefault(_matterJs);
 
-	var _zdColours = __webpack_require__(2);
+	var _bodiesSemicircle = __webpack_require__(2);
+
+	var _bodiesSemicircle2 = _interopRequireDefault(_bodiesSemicircle);
+
+	var _zdColours = __webpack_require__(3);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -62,7 +66,10 @@
 	    Render = _matterJs2.default.Render,
 	    World = _matterJs2.default.World,
 	    Events = _matterJs2.default.Events,
-	    Bodies = _matterJs2.default.Bodies;
+	    Common = _matterJs2.default.Common,
+	    Bodies = _matterJs2.default.Bodies,
+	    Vertices = _matterJs2.default.Vertices,
+	    Body = _matterJs2.default.Body;
 
 	var runner = _matterJs2.default.Runner.create();
 
@@ -74,8 +81,8 @@
 	  element: document.getElementById('tetris'),
 	  engine: engine,
 	  options: {
-	    width: 600,
-	    height: 900,
+	    width: 400,
+	    height: 700,
 	    wireframes: false,
 	    background: _zdColours.ZD_COLOUR_LIGHT
 	  }
@@ -97,7 +104,7 @@
 	    strokeStyle: 'transparent'
 	  }
 	});
-	var rightWall = Bodies.rectangle(render.options.width, 450, 60, render.options.height, {
+	var rightWall = Bodies.rectangle(render.options.width, render.options.height / 2, 60, render.options.height, {
 	  isStatic: true,
 	  render: {
 	    fillStyle: _zdColours.ZD_COLOUR_DARK,
@@ -106,75 +113,42 @@
 	});
 
 	var getRandomColor = function getRandomColor() {
-	  var blockColor = Math.floor(Math.random() * 7);
-	  var color = void 0;
+	  return Common.choose([_zdColours.ZD_APPLE_GREEN, _zdColours.ZD_PELOROUS, _zdColours.ZD_YELLOW, _zdColours.ZD_ORANGE, _zdColours.ZD_MANDY, _zdColours.ZD_FLAMINGO, _zdColours.ZD_TEAL]);
+	};
 
-	  switch (blockColor) {
-	    case 0:
-	      return _zdColours.ZD_APPLE_GREEN;
-	    case 1:
-	      return _zdColours.ZD_PELOROUS;
-	    case 2:
-	      return _zdColours.ZD_YELLOW;
-	    case 3:
-	      return _zdColours.ZD_ORANGE;
-	    case 4:
-	      return _zdColours.ZD_MANDY;
-	    case 5:
-	      return _zdColours.ZD_FLAMINGO;
-	    case 6:
-	      return _zdColours.ZD_TEAL;
-	  }
+	var getRandomShape = function getRandomShape(x, color) {
+	  return Common.choose([Bodies.rectangle(x, 0, 80, 80, { // square
+	    render: {
+	      fillStyle: color,
+	      strokeStyle: 'transparent'
+	    }
+	  }), Bodies.rectangle(x, 0, 80, 160, { // rect
+	    render: {
+	      fillStyle: color,
+	      strokeStyle: 'transparent'
+	    }
+	  }), Bodies.circle(x, 0, 40, { // circle
+	    render: {
+	      fillStyle: color,
+	      strokeStyle: 'transparent'
+	    }
+	  }), Bodies.polygon(x, 0, 3, 40, { // triangle
+	    render: {
+	      fillStyle: color,
+	      strokeStyle: 'transparent'
+	    }
+	  }), (0, _bodiesSemicircle2.default)(x, 0, 40, { // semicircle
+	    render: {
+	      fillStyle: color,
+	      strokeStyle: 'transparent'
+	    }
+	  })]);
 	};
 
 	var generateBlock = function generateBlock() {
 	  var x = render.options.width * Math.random();
-	  var blockType = Math.floor(Math.random() * 5);
-
 	  var color = getRandomColor();
-
-	  switch (blockType) {
-	    case 0:
-	      // small square
-	      return Bodies.rectangle(x, 0, 80, 80, {
-	        render: {
-	          fillStyle: color,
-	          strokeStyle: 'transparent'
-	        }
-	      });
-	    case 1:
-	      // rectangle
-	      return Bodies.rectangle(x, 0, 80, 160, {
-	        render: {
-	          fillStyle: color,
-	          strokeStyle: 'transparent'
-	        }
-	      });
-	    case 2:
-	      // small circle
-	      return Bodies.circle(x, 0, 40, {
-	        render: {
-	          fillStyle: color,
-	          strokeStyle: 'transparent'
-	        }
-	      });
-	    case 3:
-	      // triangle
-	      return Bodies.polygon(x, 0, 3, 40, {
-	        render: {
-	          fillStyle: color,
-	          strokeStyle: 'transparent'
-	        }
-	      });
-	    case 4:
-	      // semicircle
-	      return Bodies.polygon(x, 0, 3, 40, {
-	        render: {
-	          fillStyle: color,
-	          strokeStyle: 'transparent'
-	        }
-	      });
-	  }
+	  return getRandomShape(x, color);
 	};
 
 	Events.on(engine, 'beforeTick', function () {
@@ -10176,6 +10150,65 @@
 
 /***/ },
 /* 2 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
+
+	var _matterJs = __webpack_require__(1);
+
+	var _matterJs2 = _interopRequireDefault(_matterJs);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	// module aliases
+	var Common = _matterJs2.default.Common,
+	    Bodies = _matterJs2.default.Bodies,
+	    Vertices = _matterJs2.default.Vertices,
+	    Body = _matterJs2.default.Body;
+
+	var _semiCircle = function _semiCircle(x, y, sides, radius, options) {
+	    options = options || {};
+
+	    var theta = 2 * Math.PI / sides,
+	        path = '',
+	        offset = theta * 0.5;
+
+	    for (var i = 0; i < sides; i += 1) {
+	        var angle = offset + i * theta,
+	            xx = Math.cos(angle) * radius,
+	            yy = Math.sin(angle) * radius;
+
+	        path += 'L ' + xx.toFixed(3) + ' ' + yy.toFixed(3) + ' ';
+	    }
+	    var vertices = Vertices.fromPath(path);
+	    vertices = vertices.slice(vertices.length / 2); // Slice vertices of circle in half, forming a semi-circle
+	    var polygon = {
+	        label: 'Polygon Body',
+	        position: { x: x, y: y },
+	        vertices: vertices
+	    };
+	    return Body.create(Common.extend({}, polygon, options));
+	};
+
+	// returns semiCircle
+
+	exports.default = function (x, y, radius, options) {
+	    // approximate circles with polygons until true circles implemented in SAT
+	    var maxSides = 25;
+	    var sides = Math.ceil(Math.max(10, Math.min(maxSides, radius)));
+
+	    // optimisation: always use even number of sides (half the number of unique axes)
+	    if (sides % 2 === 1) sides += 1;
+
+	    return _semiCircle(x, y, sides, radius, options);
+	};
+
+/***/ },
+/* 3 */
 /***/ function(module, exports) {
 
 	"use strict";

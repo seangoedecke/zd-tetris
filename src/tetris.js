@@ -1,4 +1,5 @@
 import Matter from 'matter-js'
+import semiCircle from './bodies-semicircle'
 import {
   ZD_COLOUR_DARK,
   ZD_COLOUR_LIGHT,
@@ -18,7 +19,10 @@ const Engine = Matter.Engine,
     Render = Matter.Render,
     World = Matter.World,
     Events = Matter.Events,
-    Bodies = Matter.Bodies;
+    Common = Matter.Common,
+    Bodies = Matter.Bodies,
+    Vertices = Matter.Vertices,
+    Body = Matter.Body;
 
 const runner = Matter.Runner.create()
 
@@ -30,8 +34,8 @@ const render = Render.create({
     element: document.getElementById('tetris'),
     engine: engine,
     options: {
-      width: 600,
-      height: 900,
+      width: 400,
+      height: 700,
       wireframes: false,
       background: ZD_COLOUR_LIGHT
     }
@@ -65,7 +69,7 @@ const leftWall = Bodies.rectangle(
   });
 const rightWall = Bodies.rectangle(
   render.options.width,
-  450,
+  (render.options.height / 2),
   60,
   render.options.height,
   {
@@ -76,80 +80,52 @@ const rightWall = Bodies.rectangle(
     }
   });
 
-const getRandomColor = () => {
-  let blockColor = Math.floor(Math.random() * 7)
-  let color
 
-  switch (blockColor) {
-    case 0:
-      return ZD_APPLE_GREEN
-    case 1:
-      return ZD_PELOROUS
-    case 2:
-      return ZD_YELLOW
-    case 3:
-      return ZD_ORANGE
-    case 4:
-      return ZD_MANDY
-    case 5:
-      return ZD_FLAMINGO
-    case 6:
-      return ZD_TEAL
-  }
 
-}
+
+const getRandomColor = () => (
+  Common.choose([ZD_APPLE_GREEN, ZD_PELOROUS, ZD_YELLOW, ZD_ORANGE, ZD_MANDY, ZD_FLAMINGO, ZD_TEAL])
+)
+
+const getRandomShape = (x, color) => (
+  Common.choose([
+    Bodies.rectangle(x, 0, 80, 80, {  // square
+      render: {
+        fillStyle: color,
+        strokeStyle: 'transparent'
+      }
+    }),
+    Bodies.rectangle(x, 0, 80, 160, { // rect
+      render: {
+        fillStyle: color,
+        strokeStyle: 'transparent'
+      }
+    }),
+    Bodies.circle(x, 0, 40, { // circle
+      render: {
+        fillStyle: color,
+        strokeStyle: 'transparent'
+      }
+    }),
+    Bodies.polygon(x, 0, 3, 40, { // triangle
+      render: {
+        fillStyle: color,
+        strokeStyle: 'transparent'
+      }
+    }),
+    semiCircle(x, 0, 40, { // semicircle
+      render: {
+        fillStyle: color,
+        strokeStyle: 'transparent'
+      }
+    })
+  ])
+)
 
 const generateBlock = () => {
   let x = render.options.width * Math.random()
-  let blockType = Math.floor(Math.random() * 5)
-
-
   let color = getRandomColor();
-
-
-  switch (blockType) {
-    case 0:
-      // small square
-      return Bodies.rectangle(x, 0, 80, 80, {
-        render: {
-          fillStyle: color,
-          strokeStyle: 'transparent'
-        }
-      })
-    case 1:
-      // rectangle
-      return Bodies.rectangle(x, 0, 80, 160, {
-        render: {
-          fillStyle: color,
-          strokeStyle: 'transparent'
-        }
-      })
-    case 2:
-      // small circle
-      return Bodies.circle(x, 0, 40, {
-        render: {
-          fillStyle: color,
-          strokeStyle: 'transparent'
-        }
-      })
-    case 3:
-      // triangle
-      return Bodies.polygon(x, 0, 3, 40, {
-        render: {
-          fillStyle: color,
-          strokeStyle: 'transparent'
-        }
-      })
-    case 4:
-      // semicircle
-      return Bodies.polygon(x, 0, 3, 40, {
-        render: {
-          fillStyle: color,
-          strokeStyle: 'transparent'
-        }
-      })
-  }
-
+  return getRandomShape(x, color)
 }
 
 Events.on(engine, 'beforeTick', () => {
