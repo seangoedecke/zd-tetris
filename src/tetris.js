@@ -153,19 +153,19 @@ const generateBlock = () => {
 
 // listen for keys
 document.onkeypress = (key) => {
-  switch (key.key) {
-    case 'a':
-      if (activeBlock.angularVelocity > 0) { Body.setAngularVelocity(activeBlock, 0) }
-      if (activeBlock.angularVelocity > -0.01) {
-        Body.applyForce(activeBlock, { x: 0, y: 0 }, { x: -0.05 * activeBlock.mass, y: -0.01})
-      }
+  switch (key.code) {
+    case 'KeyA': // left arrow
+      Body.applyForce(activeBlock, { x: 0, y: 0 }, { x: -0.05 * activeBlock.mass, y: -0.01})
       break
-    case 'd':
-      if (activeBlock.angularVelocity < 0) { Body.setAngularVelocity(activeBlock, 0) }
-      if (activeBlock.angularVelocity < 0.01) {
-        Body.applyForce(activeBlock, { x: 0, y: 0 }, { x: 0.05 * activeBlock.mass, y: -0.01})
-      }
+    case 'KeyD': // right arrow
+      Body.applyForce(activeBlock, { x: 0, y: 0 }, { x: 0.05 * activeBlock.mass, y: -0.01})
       break
+  }
+}
+
+document.onkeydown = (key) => {
+  if ((key.code === 'KeyA') || (key.code === 'KeyB')) {
+    Body.setAngularVelocity(activeBlock, 0)
   }
 }
 
