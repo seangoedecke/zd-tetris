@@ -58,9 +58,6 @@
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-	var tick = 0;
-	var activeBlock = void 0;
-
 	// module aliases
 	var Engine = _matterJs2.default.Engine,
 	    Render = _matterJs2.default.Render,
@@ -68,10 +65,17 @@
 	    Events = _matterJs2.default.Events,
 	    Common = _matterJs2.default.Common,
 	    Bodies = _matterJs2.default.Bodies,
+	    Bounds = _matterJs2.default.Bounds,
 	    Vertices = _matterJs2.default.Vertices,
+	    Composite = _matterJs2.default.Composite,
+	    Runner = _matterJs2.default.Runner,
 	    Body = _matterJs2.default.Body;
 
-	var runner = _matterJs2.default.Runner.create();
+	var tick = 0;
+	var activeBlock = Bodies.rectangle(0, 0, 0, 0);
+
+	var resultMessage = document.getElementById('message');
+	var results = document.getElementById('results');
 
 	// create an engine
 	var engine = Engine.create();
@@ -97,14 +101,23 @@
 	    strokeStyle: 'transparent'
 	  }
 	});
-	var leftWall = Bodies.rectangle(0, render.options.height / 2, 60, render.options.height, {
+	var leftWall = Bodies.rectangle(0, render.options.height / 2, 60, render.options.height + 100, {
 	  isStatic: true,
 	  render: {
 	    fillStyle: _zdColours.ZD_COLOUR_DARK,
 	    strokeStyle: 'transparent'
 	  }
 	});
-	var rightWall = Bodies.rectangle(render.options.width, render.options.height / 2, 60, render.options.height, {
+	var rightWall = Bodies.rectangle(render.options.width, render.options.height / 2, 60, render.options.height + 100, {
+	  isStatic: true,
+	  render: {
+	    fillStyle: _zdColours.ZD_COLOUR_DARK,
+	    strokeStyle: 'transparent'
+	  }
+	});
+
+	// Used for loss checking collision detection. Do not add to world
+	var ceiling = Bodies.rectangle(render.options.width / 2, -20, render.options.width, 10, {
 	  isStatic: true,
 	  render: {
 	    fillStyle: _zdColours.ZD_COLOUR_DARK,
@@ -117,55 +130,123 @@
 	};
 
 	var getRandomShape = function getRandomShape(x, color) {
-	  return Common.choose([Bodies.rectangle(x, 0, 80, 80, { // square
+	  return Common.choose([Bodies.rectangle(x, 5, 80, 80, { // square
 	    render: {
 	      fillStyle: color,
 	      strokeStyle: 'transparent'
-	    }
-	  }), Bodies.rectangle(x, 0, 80, 160, { // rect
+	    },
+	    friction: 1
+	  }), Bodies.rectangle(x, 5, 80, 160, { // rect
 	    render: {
 	      fillStyle: color,
 	      strokeStyle: 'transparent'
-	    }
-	  }), Bodies.circle(x, 0, 40, { // circle
+	    },
+	    friction: 1
+	  }), Bodies.circle(x, 5, 40, { // circle
 	    render: {
 	      fillStyle: color,
 	      strokeStyle: 'transparent'
-	    }
-	  }), Bodies.polygon(x, 0, 3, 40, { // triangle
+	    },
+	    friction: 1
+	  }), Bodies.polygon(x, 5, 3, 40, { // triangle
 	    render: {
 	      fillStyle: color,
 	      strokeStyle: 'transparent'
-	    }
-	  }), (0, _bodiesSemicircle2.default)(x, 0, 40, { // semicircle
+	    },
+	    friction: 1
+	  }), (0, _bodiesSemicircle2.default)(x, 5, 40, { // semicircle
 	    render: {
 	      fillStyle: color,
 	      strokeStyle: 'transparent'
-	    }
+	    },
+	    friction: 1
 	  })]);
 	};
 
 	var generateBlock = function generateBlock() {
-	  var x = render.options.width * Math.random();
+	  var x = 0;
+	  while (x < 30 || x > render.options.width - 30) {
+	    x = render.options.width * Math.random();
+	  }
 	  var color = getRandomColor();
 	  return getRandomShape(x, color);
 	};
 
+	// listen for keys
+	document.onkeypress = function (key) {
+	  switch (key.key) {
+	    case 'a':
+	      if (activeBlock.angularVelocity > 0) {
+	        Body.setAngularVelocity(activeBlock, 0);
+	      }
+	      if (activeBlock.angularVelocity > -0.01) {
+	        Body.applyForce(activeBlock, { x: 0, y: 0 }, { x: -0.05 * activeBlock.mass, y: -0.01 });
+	      }
+	      break;
+	    case 'd':
+	      if (activeBlock.angularVelocity < 0) {
+	        Body.setAngularVelocity(activeBlock, 0);
+	      }
+	      if (activeBlock.angularVelocity < 0.01) {
+	        Body.applyForce(activeBlock, { x: 0, y: 0 }, { x: 0.05 * activeBlock.mass, y: -0.01 });
+	      }
+	      break;
+	  }
+	};
+
+	// game loop
 	Events.on(engine, 'beforeTick', function () {
 	  tick = tick + 1;
+
+	  // enforce hard limit on active block
+	  if (activeBlock.angularVelocity < -0.05) {
+	    Body.setAngularVelocity(activeBlock, -0.05);
+	  }
+	  if (activeBlock.angularVelocity > 0.05) {
+	    Body.setAngularVelocity(activeBlock, 0.05);
+	  }
+	  if (activeBlock.velocity < -0.05) {
+	    Body.setVelocity(activeBlock, -0.05);
+	  }
+	  if (activeBlock.velocity > 0.05) {
+	    Body.setVelocity(activeBlock, 0.05);
+	  }
+
+	  // check for loss condition
+	  Composite.allBodies(engine.world).forEach(function (body) {
+	    if (Bounds.overlaps(ceiling.bounds, body.bounds) && body != activeBlock && body != leftWall && body != rightWall) {
+
+	      renderEndGameScreen(Composite.allBodies(engine.world).length - 3);
+	      Runner.stop(runner);
+	    }
+	  });
+
+	  // generate new block if required
 	  if (tick % 100 === 0) {
 	    var newBlock = generateBlock();
+
+	    activeBlock.render.strokeStyle = 'transparent'; // set focus color
+	    newBlock.render.strokeStyle = _zdColours.ZD_COLOUR_DARK;
+
 	    activeBlock = newBlock;
 	    World.add(engine.world, [newBlock]);
-	    tick = 0;
 	  }
+
+	  if (tick === 500) {
+	    tick = 0;
+	  }; // make sure tick never gets too big
 	});
+
+	var renderEndGameScreen = function renderEndGameScreen(score) {
+	  resultMessage.innerHTML = 'You stacked ' + (Composite.allBodies(engine.world).length - 3) + ' bodies before losing.';
+	  results.className = 'results';
+	};
 
 	// add all of the bodies to the world
 	World.add(engine.world, [leftWall, rightWall, ground]);
 
 	// run the engine
-	Engine.run(engine);
+	var runner = Engine.run(engine);
 
 	// run the renderer
 	Render.run(render);
