@@ -16,6 +16,17 @@ div {
   flex-direction: column;
 }
 
+.tetris-initial-message {
+  position: absolute;
+  width: 200px;
+  padding: 20px 40px 20px 40px;
+  margin-bottom: 20px;
+  align-items: center;
+  justify-content: center;
+  display: flex;
+  flex-direction: column;
+}
+
 .results-middle{
   padding-top: 10px;
   padding-bottom: 10px;
